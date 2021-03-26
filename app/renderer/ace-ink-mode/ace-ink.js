@@ -512,6 +512,112 @@ inkHighlightRules.metaData = {
 
 oop.inherits(inkHighlightRules, TextHighlightRules);
 
+<<<<<<< Updated upstream
+=======
+// Set up the folding rules for ink
+
+var inkFoldingRules = function() {};
+
+oop.inherits(inkFoldingRules, BaseFoldMode);
+
+(function(){
+
+    // Use a regular expression to say which line starts a fold.   
+
+    this.foldingStartMarker =  /^(\s*)((=)(?<knot>==)?(\s*)((?:function)?)(\s*)(\w+)(\s*)(\([\w,\s->]*\))?(\s*)((?:={1,})?))|(?<choice>\*+|\++|-+)/; 
+
+    // Get the range of text that will be included in the fold. 
+
+    // Note - properties of Range : {start : {row, column}, end : {row, column}}
+    // Different then the ones provided in Ace documentation
+
+    this.getFoldWidgetRange = function(session, foldStyle, row) {
+        var line = session.getLine(row);
+        var matchResult = line.match(this.foldingStartMarker)
+        
+        // Check to see if the we're folding a knot or a stitch is a knot or a stitch. 
+        if (matchResult.groups.choice){
+            return this.getChoiceFoldRange(session, foldStyle, row, line, matchResult.groups.choice)
+        }
+        if (matchResult.groups.knot){
+            return this.getKnotFoldRange(session, foldStyle, row, line)
+        }
+        else{
+            return this.getStitchFoldRange(session, foldStyle, row, line)
+        }
+    };
+
+    this.getKnotFoldRange = function(session, foldStyle, row, line){
+
+        // Collect all text into the fold until you get to a knot
+
+        var endLineRegex = /^(\s*)(===)(\s*)((?:function)?)(\s*)(\w+)(\s*)(\([\w,\s->]*\))?(\s*)((?:={1,})?)/
+        return this.getRangeFromStartToRegex(session, foldStyle, row, line, endLineRegex)
+    }
+
+    this.getStitchFoldRange = function(session, foldStyle, row, line){
+
+        // Collect all text into the fold until you get to a knot or a stitch
+
+        var endLineRegex = /^(\s*)(=)(==)?(\s*)((?:function)?)(\s*)(\w+)(\s*)(\([\w,\s->]*\))?(\s*)((?:={1,})?)/
+        return this.getRangeFromStartToRegex(session, foldStyle, row, line, endLineRegex)
+    }
+
+    this.getChoiceFoldRange = function(session, foldStyle, row, line, choice_text){
+        
+        // Collect all text into the fold until you get to a choice, that is of a larger level. 
+        var level = choice_text.length
+        var endLineRegex = new RegExp(`^\\s*(?<choice>\\*{1,${level}}|\\+{1,${level}}|-{1,${level}})[^\\*\\+\\-$]`)
+        return this.getRangeFromStartToRegex(session, foldStyle, row, line, endLineRegex)
+
+    }
+
+    this.getRangeFromStartToRegex = function(session, foldStyle, row, line, regex){
+
+        // Start from the end of the first line, then check every line until the RegEx is found, 
+        // or until you get to the end of the text editor. 
+
+        var startRow = row;
+        var startCol = line.length
+        var endRow = row;
+        var maxRow = session.getLength()
+        while (endRow < maxRow){
+            endRow++;
+            var regexLine = session.getLine(endRow).match(regex);
+            console.log(regex)
+            if (regexLine){
+                break;
+            }
+        }
+        
+        // Make sure we don't include the RegEx line in the fold. 
+
+        if (startRow != endRow){
+            endRow -= 1;
+        }
+
+        var endCol = session.getLine(row).length;
+        var range = new Range(startRow, startCol, endRow, endCol);
+        range = this.removeWhitespaceFromRange(session, range)
+        return range;
+    }
+
+    this.removeWhitespaceFromRange = function(session, range){
+
+        // Remove empty lines from the range of text. 
+
+        var endRow = range.end.row
+        while (session.getLine(endRow)===""){
+            endRow -= 1
+        }
+        range.end.row = endRow;
+        range.end.column = session.getLine(endRow).length;
+        return range
+    }
+
+}).call(inkFoldingRules.prototype);
+
+>>>>>>> Stashed changes
 // Provide Ink Keywords for Auto-Completer
 const keywords = [
     "CONST",
